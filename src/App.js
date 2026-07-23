@@ -222,7 +222,7 @@ function SourceAttribution({ sources }) {
   );
 }
 
-function PlayerCard({ p, statusConfig, onEdit }) {
+function PlayerCard({ p, statusConfig, onEdit, isAdmin }) {
   const sc = statusConfig[p.status] || Object.values(statusConfig)[0];
   const hasPriorHistory = p.prior_windows && p.prior_windows.length > 0;
   const confidence = calculateConfidence(p);
@@ -278,11 +278,13 @@ function PlayerCard({ p, statusConfig, onEdit }) {
 
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
             <p style={{ margin: 0, fontSize: "12px", color: "#7a8a8e", fontFamily: "sans-serif", lineHeight: 1.5 }}>{p.notes}</p>
-            <button onClick={() => onEdit(p)} style={{
-              flexShrink: 0, padding: "3px 8px", background: "transparent",
-              border: "1px solid #2e3840", color: "#667", borderRadius: "4px",
-              cursor: "pointer", fontFamily: "sans-serif", fontSize: "11px",
-            }}>Edit</button>
+            {isAdmin && (
+              <button onClick={() => onEdit(p)} style={{
+                flexShrink: 0, padding: "3px 8px", background: "transparent",
+                border: "1px solid #2e3840", color: "#667", borderRadius: "4px",
+                cursor: "pointer", fontFamily: "sans-serif", fontSize: "11px",
+              }}>Edit</button>
+            )}
           </div>
 
           <SourceAttribution sources={p.sources} />
@@ -385,6 +387,14 @@ export default function App() {
   const [adding, setAdding] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [filter, setFilter] = useState("all");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("admin") === "spi2026") {
+      setIsAdmin(true);
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -461,11 +471,14 @@ export default function App() {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
             {saveMsg && <span style={{ fontSize: "11px", color: "#00c853", fontFamily: "sans-serif" }}>{saveMsg}</span>}
-            <button onClick={() => setAdding(true)} style={{
-              padding: "5px 12px", background: "#9b2335", color: "#fff",
-              border: "none", borderRadius: "4px", cursor: "pointer",
-              fontFamily: "sans-serif", fontSize: "11px", fontWeight: 700,
-            }}>+ Add</button>
+            {isAdmin && <span style={{ fontSize: "10px", color: "#9b2335", fontFamily: "monospace", letterSpacing: "0.1em", marginRight: "4px" }}>ADMIN</span>}
+            {isAdmin && (
+              <button onClick={() => setAdding(true)} style={{
+                padding: "5px 12px", background: "#9b2335", color: "#fff",
+                border: "none", borderRadius: "4px", cursor: "pointer",
+                fontFamily: "sans-serif", fontSize: "11px", fontWeight: 700,
+              }}>+ Add</button>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: "2px" }}>
@@ -512,6 +525,7 @@ export default function App() {
         )}
         {filtered.map(p => (
           <PlayerCard key={p.id} p={p} statusConfig={cfg.statusConfig}
+            isAdmin={isAdmin}
             onEdit={pl => { setEditingPlayer(pl); setEditingTab(tab); }} />
         ))}
       </div>
