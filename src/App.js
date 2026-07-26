@@ -606,19 +606,19 @@ const CLUBS = [
   },
   {
     id: "sunderland", name: "Sunderland", badge: "🔴",
-    primaryColor: "#EB172B", league: "championship", manager: "Régis Le Bris",
+    primaryColor: "#EB172B", league: "premier_league", manager: "Régis Le Bris",
     incomings: SUNDERLAND_INCOMINGS, outgoings: SUNDERLAND_OUTGOINGS, academy: SUNDERLAND_ACADEMY,
     storageKeys: { in: "sun-incoming-v1", out: "sun-outgoing-v1", acad: "sun-academy-v1" },
   },
   {
     id: "coventry", name: "Coventry City", badge: "🔵",
-    primaryColor: "#009EE0", league: "championship", manager: "Frank Lampard",
+    primaryColor: "#009EE0", league: "premier_league", manager: "Frank Lampard",
     incomings: COVENTRY_INCOMINGS, outgoings: COVENTRY_OUTGOINGS, academy: COVENTRY_ACADEMY,
     storageKeys: { in: "cov-incoming-v1", out: "cov-outgoing-v1", acad: "cov-academy-v1" },
   },
   {
     id: "hull", name: "Hull City", badge: "🟠",
-    primaryColor: "#F18A01", league: "championship", manager: "Ruben Selles",
+    primaryColor: "#F18A01", league: "premier_league", manager: "Ruben Selles",
     incomings: HULL_INCOMINGS, outgoings: HULL_OUTGOINGS, academy: HULL_ACADEMY,
     storageKeys: { in: "hul-incoming-v1", out: "hul-outgoing-v1", acad: "hul-academy-v1" },
   },
@@ -963,7 +963,284 @@ function EditModal({ player, statusConfig, onSave, onClose }) {
 
 
 
+
+// ── CASCADING LEAGUE/CLUB DROPDOWN ───────────────────────────────────────────
+function CascadingDropdown({ selectedClubId, onSelectClub }) {
+  const [openLeague, setOpenLeague] = useState(null);
+  const champClubs = CLUBS.filter(c => c.league === "championship").sort((a,b) => a.name.localeCompare(b.name));
+  const plClubs = CLUBS.filter(c => c.league === "premier_league").sort((a,b) => a.name.localeCompare(b.name));
+  const selectedClub = CLUBS.find(c => c.id === selectedClubId);
+
+  const leagueStyle = (league) => ({
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "8px 14px", cursor: "pointer", fontFamily: "monospace",
+    fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em",
+    color: openLeague === league ? "#e8a020" : "#8a9aa0",
+    background: openLeague === league ? "rgba(232,160,32,0.08)" : "transparent",
+    borderBottom: "1px solid #1e2428",
+    transition: "all 0.15s",
+  });
+
+  const clubStyle = (club) => ({
+    display: "flex", alignItems: "center", gap: "8px",
+    padding: "7px 20px", cursor: "pointer",
+    fontSize: "12px", fontFamily: "sans-serif",
+    color: selectedClubId === club.id ? "#e8a020" : "#c8d0d8",
+    background: selectedClubId === club.id ? "rgba(232,160,32,0.1)" : "transparent",
+    borderLeft: selectedClubId === club.id ? "2px solid #e8a020" : "2px solid transparent",
+    transition: "all 0.1s",
+  });
+
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Current selection display */}
+      <div
+        onClick={() => setOpenLeague(openLeague ? null : "pl")}
+        style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "7px 14px", cursor: "pointer",
+          background: "#111619", border: "1px solid #2e3840",
+          borderRadius: openLeague ? "4px 4px 0 0" : "4px",
+          fontFamily: "sans-serif", fontSize: "13px", color: "#f0e8e0",
+          minWidth: "220px",
+        }}
+      >
+        <span>{selectedClub?.badge}</span>
+        <span style={{ flex: 1 }}>{selectedClub?.name}</span>
+        <span style={{ color: "#e8a020", fontSize: "10px", fontFamily: "monospace" }}>
+          {openLeague ? "▲" : "▼"}
+        </span>
+      </div>
+
+      {/* Dropdown panel */}
+      {openLeague && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, zIndex: 200,
+          background: "#0d1215", border: "1px solid #2e3840",
+          borderTop: "none", borderRadius: "0 0 4px 4px",
+          minWidth: "220px", maxHeight: "400px", overflowY: "auto",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+        }}>
+          {/* Championship */}
+          <div
+            style={leagueStyle("champ")}
+            onClick={() => setOpenLeague(openLeague === "champ" ? "pl" : "champ")}
+          >
+            <span>Championship 2026/27</span>
+            <span style={{ fontSize: "9px" }}>{openLeague === "champ" ? "▲" : "▶"}</span>
+          </div>
+          {openLeague === "champ" && champClubs.map(club => (
+            <div key={club.id} style={clubStyle(club)}
+              onClick={() => { onSelectClub(club.id); setOpenLeague(null); }}>
+              <span>{club.badge}</span>
+              <span>{club.name}</span>
+              {club.relegated && <span style={{ fontSize: "9px", color: "#ff5252", fontFamily: "monospace" }}>REL</span>}
+            </div>
+          ))}
+
+          {/* Premier League */}
+          <div
+            style={leagueStyle("pl")}
+            onClick={() => setOpenLeague(openLeague === "pl" ? "champ" : "pl")}
+          >
+            <span>Premier League 2026/27</span>
+            <span style={{ fontSize: "9px" }}>{openLeague === "pl" ? "▲" : "▶"}</span>
+          </div>
+          {openLeague === "pl" && plClubs.map(club => (
+            <div key={club.id} style={clubStyle(club)}
+              onClick={() => { onSelectClub(club.id); setOpenLeague(null); }}>
+              <span>{club.badge}</span>
+              <span>{club.name}</span>
+              {club.europeanComp === "champions_league" && <span style={{ fontSize: "9px", color: "#00b0ff", fontFamily: "monospace" }}>UCL</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── HOMEPAGE ──────────────────────────────────────────────────────────────────
+function HomePage({ onEnter }) {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const plCount = CLUBS.filter(c => c.league === "premier_league").length;
+  const champCount = CLUBS.filter(c => c.league === "championship").length;
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (email) {
+      window.open(`https://spi-newsletter.beehiiv.com/?email=${encodeURIComponent(email)}`, "_blank");
+      setSubmitted(true);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#080a0c", fontFamily: "sans-serif", color: "#f0e8e0" }}>
+
+      {/* Nav */}
+      <div style={{
+        background: "#080a0c", borderBottom: "1px solid #1e2428",
+        padding: "0 24px", display: "flex", alignItems: "center",
+        justifyContent: "space-between", height: "48px",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+            <line x1="3" y1="25" x2="26" y2="25" stroke="#e8a020" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+            <line x1="3" y1="25" x2="3" y2="3" stroke="#e8a020" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+            <path d="M3 15 Q11 15 11 25" stroke="#e8a020" strokeWidth="1" fill="none" strokeDasharray="1.8 1.8" strokeLinecap="round" opacity="0.55"/>
+            <line x1="3" y1="25" x2="3" y2="7" stroke="#e8a020" strokeWidth="1.6" strokeLinecap="round"/>
+            <path d="M3 7 L16 10.5 L3 14 Z" fill="#e8a020"/>
+          </svg>
+          <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#f0e8e0", letterSpacing: "0.04em" }}>
+            SETPIECE<span style={{ color: "#e8a020" }}>INTEL</span>
+          </span>
+        </div>
+        <button onClick={onEnter} style={{
+          padding: "6px 16px", background: "transparent",
+          border: "1px solid #2e3840", color: "#8a9aa0",
+          borderRadius: "4px", cursor: "pointer",
+          fontFamily: "monospace", fontSize: "11px", letterSpacing: "0.08em",
+        }}>ENTER TRACKER →</button>
+      </div>
+
+      {/* Hero */}
+      <div style={{
+        maxWidth: "860px", margin: "0 auto",
+        padding: "80px 24px 60px",
+        textAlign: "center",
+      }}>
+        {/* Logo mark */}
+        <div style={{ marginBottom: "32px", display: "flex", justifyContent: "center" }}>
+          <svg width="100" height="100" viewBox="0 0 28 28" fill="none">
+            <line x1="3" y1="25" x2="26" y2="25" stroke="#e8a020" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+            <line x1="3" y1="25" x2="3" y2="3" stroke="#e8a020" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+            <path d="M3 15 Q11 15 11 25" stroke="#e8a020" strokeWidth="1" fill="none" strokeDasharray="1.8 1.8" strokeLinecap="round" opacity="0.55"/>
+            <line x1="3" y1="25" x2="3" y2="7" stroke="#e8a020" strokeWidth="1.6" strokeLinecap="round"/>
+            <path d="M3 7 L16 10.5 L3 14 Z" fill="#e8a020"/>
+          </svg>
+        </div>
+
+        {/* Wordmark */}
+        <div style={{ marginBottom: "8px" }}>
+          <span style={{ fontFamily: "monospace", fontSize: "clamp(28px, 6vw, 52px)", fontWeight: 700, color: "#f0e8e0", letterSpacing: "0.06em" }}>SETPIECE</span>
+          <span style={{ fontFamily: "monospace", fontSize: "clamp(28px, 6vw, 52px)", fontWeight: 400, color: "#e8a020", letterSpacing: "0.4em", marginLeft: "8px" }}>INTEL</span>
+        </div>
+
+        {/* Tagline */}
+        <div style={{ fontFamily: "monospace", fontSize: "11px", letterSpacing: "0.2em", color: "#4a5a62", marginBottom: "32px", textTransform: "uppercase" }}>
+          Transfer Intelligence, Structured
+        </div>
+
+        {/* Headline */}
+        <h1 style={{ fontSize: "clamp(22px, 4vw, 38px)", fontWeight: 300, color: "#f0e8e0", lineHeight: 1.3, marginBottom: "16px", letterSpacing: "-0.01em" }}>
+          The transfer window, structured.<br/>Signal over noise.
+        </h1>
+
+        <p style={{ fontSize: "16px", color: "#8a9aa0", lineHeight: 1.7, maxWidth: "560px", margin: "0 auto 40px", fontWeight: 300 }}>
+          Real-time transfer intelligence covering every Premier League and EFL Championship club. Confidence-scored. Source-attributed. Updated continuously throughout the window.
+        </p>
+
+        {/* Feature pills */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center", marginBottom: "48px" }}>
+          {[
+            { label: `All ${plCount} Premier League Clubs`, color: "#00b0ff" },
+            { label: `All ${champCount} Championship Clubs`, color: "#e8a020" },
+            { label: "Confidence Scoring", color: "#00c853" },
+            { label: "Source Attribution", color: "#ce93d8" },
+            { label: "Deal Lifecycle Tracking", color: "#ffab40" },
+          ].map((p, i) => (
+            <span key={i} style={{
+              padding: "4px 12px", borderRadius: "20px", fontSize: "11px",
+              background: `${p.color}15`, color: p.color,
+              border: `1px solid ${p.color}30`,
+              fontFamily: "monospace", fontWeight: 600, letterSpacing: "0.04em",
+            }}>{p.label}</span>
+          ))}
+        </div>
+
+        {/* CTA Buttons */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginBottom: "64px" }}>
+          <button onClick={onEnter} style={{
+            padding: "14px 32px", background: "#e8a020", color: "#080a0c",
+            border: "none", borderRadius: "3px", cursor: "pointer",
+            fontFamily: "monospace", fontSize: "13px", fontWeight: 700,
+            letterSpacing: "0.1em", textTransform: "uppercase",
+          }}>Enter Tracker →</button>
+          <a href="https://spi-newsletter.beehiiv.com/" target="_blank" rel="noreferrer" style={{
+            padding: "14px 32px", background: "transparent", color: "#e8a020",
+            border: "1px solid #e8a020", borderRadius: "3px", cursor: "pointer",
+            fontFamily: "monospace", fontSize: "13px", fontWeight: 700,
+            letterSpacing: "0.1em", textDecoration: "none", textTransform: "uppercase",
+            display: "inline-block",
+          }}>Get Newsletter</a>
+        </div>
+
+        {/* Email signup */}
+        <div style={{ maxWidth: "440px", margin: "0 auto 80px" }}>
+          <div style={{ fontSize: "11px", fontFamily: "monospace", color: "#4a5a62", letterSpacing: "0.12em", marginBottom: "10px", textTransform: "uppercase" }}>
+            Get transfer intelligence in your inbox
+          </div>
+          {submitted ? (
+            <div style={{ padding: "12px", background: "rgba(0,200,83,0.1)", border: "1px solid rgba(0,200,83,0.3)", borderRadius: "3px", color: "#00c853", fontFamily: "monospace", fontSize: "12px" }}>
+              ✓ Opening Beehiiv — complete signup there
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} style={{ display: "flex", border: "1px solid #2e3840", borderRadius: "3px", overflow: "hidden" }}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                style={{ flex: 1, padding: "12px 16px", background: "#0d1215", border: "none", outline: "none", color: "#f0e8e0", fontFamily: "sans-serif", fontSize: "14px" }}
+              />
+              <button type="submit" style={{
+                padding: "12px 20px", background: "#e8a020", border: "none", color: "#080a0c",
+                fontFamily: "monospace", fontSize: "11px", fontWeight: 700,
+                letterSpacing: "0.1em", cursor: "pointer", flexShrink: 0,
+              }}>SUBSCRIBE</button>
+            </form>
+          )}
+        </div>
+
+        {/* How it works */}
+        <div style={{ borderTop: "1px solid #1e2428", paddingTop: "60px", marginBottom: "60px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: "10px", letterSpacing: "0.2em", color: "#4a5a62", marginBottom: "32px", textTransform: "uppercase" }}>How It Works</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1px", background: "#1e2428", border: "1px solid #1e2428", textAlign: "left" }}>
+            {[
+              { step: "01", title: "Source Monitoring", body: "We monitor multiple journalistic and reporting sources across print, broadcast, digital media and social media — tiered by reliability and track record." },
+              { step: "02", title: "Intelligent Parsing", body: "Every report is automatically parsed to extract structured transfer data — player, clubs involved, fee, deal status and confidence signals." },
+              { step: "03", title: "Confidence Scoring", body: "Every link is scored based on source tier, corroboration count and prior window history. Know what's real." },
+              { step: "04", title: "Source Attribution", body: "Every update traces back to the journalist who reported it. Tier 1 in green. Tier 3 in grey. Total transparency." },
+            ].map((item, i) => (
+              <div key={i} style={{ background: "#080a0c", padding: "28px 24px" }}>
+                <div style={{ fontFamily: "monospace", fontSize: "10px", color: "#e8a020", letterSpacing: "0.1em", marginBottom: "8px" }}>{item.step}</div>
+                <div style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color: "#f0e8e0", marginBottom: "8px" }}>{item.title}</div>
+                <div style={{ fontSize: "12px", color: "#8a9aa0", lineHeight: 1.6, fontWeight: 300 }}>{item.body}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ borderTop: "1px solid #1e2428", paddingTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#2e3840" }}>
+            SETPIECE<span style={{ color: "#e8a020" }}>INTEL</span> · Summer 2026
+          </span>
+          <div style={{ display: "flex", gap: "16px" }}>
+            <a href="https://spi-newsletter.beehiiv.com/" target="_blank" rel="noreferrer" style={{ fontFamily: "monospace", fontSize: "10px", color: "#4a5a62", textDecoration: "none", letterSpacing: "0.08em" }}>NEWSLETTER</a>
+            <a href="https://x.com/setpieceintel" target="_blank" rel="noreferrer" style={{ fontFamily: "monospace", fontSize: "10px", color: "#4a5a62", textDecoration: "none", letterSpacing: "0.08em" }}>X / TWITTER</a>
+            <button onClick={onEnter} style={{ fontFamily: "monospace", fontSize: "10px", color: "#4a5a62", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.08em" }}>TRACKER</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [showHomepage, setShowHomepage] = useState(true);
   const [selectedClubId, setSelectedClubId] = useState("west-ham");
   const [tab, setTab] = useState("in");
   const [clubData, setClubData] = useState({});
@@ -978,6 +1255,10 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("admin") === "spi2026") setIsAdmin(true);
   }, []);
+
+  if (showHomepage) {
+    return <HomePage onEnter={() => setShowHomepage(false)} />;
+  }
 
   // Reset tab and filter when club changes
   useEffect(() => {
@@ -1078,42 +1359,13 @@ export default function App() {
         <span style={{ fontFamily: "monospace", fontSize: "10px", color: "#4a5a62", letterSpacing: "0.1em", flexShrink: 0 }}>
           SELECT CLUB
         </span>
-        <select
-          value={selectedClubId}
-          onChange={e => setSelectedClubId(e.target.value)}
-          style={{
-            background: "#111619",
-            border: "1px solid #2e3840",
-            color: "#f0e8e0",
-            borderRadius: "4px",
-            padding: "6px 12px",
-            fontFamily: "monospace",
-            fontSize: "12px",
-            cursor: "pointer",
-            flex: 1,
-            maxWidth: "300px",
-            appearance: "none",
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e8a020' stroke-width='1.5' fill='none'/%3E%3C/svg%3E\")",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 10px center",
-            paddingRight: "30px",
-          }}
-        >
-          {CLUBS.filter(c => c.league === "championship").length > 0 && (
-            <optgroup label="── Championship 2026/27 ──">
-              {CLUBS.filter(c => c.league === "championship").sort((a,b) => a.name.localeCompare(b.name)).map(c => (
-                <option key={c.id} value={c.id}>{c.badge} {c.name}</option>
-              ))}
-            </optgroup>
-          )}
-          <optgroup label="── Premier League 2026/27 ──">
-            {CLUBS.filter(c => c.league === "premier_league").sort((a,b) => a.name.localeCompare(b.name)).map(c => (
-              <option key={c.id} value={c.id}>{c.badge} {c.name}</option>
-            ))}
-          </optgroup>
-        </select>
+        <CascadingDropdown
+          selectedClubId={selectedClubId}
+          onSelectClub={setSelectedClubId}
+        />
         <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "auto" }}>
           {saveMsg && <span style={{ fontSize: "11px", color: "#00c853", fontFamily: "sans-serif" }}>{saveMsg}</span>}
+          <button onClick={() => setShowHomepage(true)} style={{ padding: "4px 10px", background: "transparent", border: "1px solid #2e3840", color: "#4a5a62", borderRadius: "3px", cursor: "pointer", fontFamily: "monospace", fontSize: "10px", letterSpacing: "0.06em" }}>← HOME</button>
           {isAdmin && <span style={{ fontSize: "10px", color: "#9b2335", fontFamily: "monospace", letterSpacing: "0.1em" }}>ADMIN</span>}
           {isAdmin && (
             <button onClick={() => setAdding(true)} style={{
@@ -1135,7 +1387,7 @@ export default function App() {
           <span style={{ fontSize: "28px" }}>{club.badge}</span>
           <div>
             <div style={{ fontSize: "10px", letterSpacing: "3px", textTransform: "uppercase", color: "#c8a080", fontFamily: "sans-serif", fontWeight: 600 }}>
-              {club.league === "championship" ? "Championship 2026/27" : "Premier League 2026/27"}
+              {club.league === "championship" ? "EFL Championship 2026/27" : "Premier League 2026/27"}
               {club.europeanComp === "champions_league" ? " · UCL" : ""}
             </div>
             <div style={{ fontSize: "18px", fontWeight: 700, color: "#f5ece8" }}>
